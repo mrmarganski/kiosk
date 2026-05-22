@@ -144,6 +144,8 @@ function testPermissions() {
 7. Set **Who has access** to **Anyone**.
 8. Click **Deploy**, authorize the permissions, and **copy the Web App URL** (you will need this in Step 4).
 
+##### The sheet will automatically create a tab at bottom of page for each time you create or end a seesion/ manually or authmatically through calendar event 
+
 ---
 
 ## 2. Google Calendar Integration
