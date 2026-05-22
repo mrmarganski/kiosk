@@ -10,6 +10,134 @@ The kiosk uses Google Sheets as the ultimate database for attendance logs, makin
 1. Create a new Google Sheet.
 2. In the menu, click **Extensions > Apps Script**.
 3. Delete any existing code and paste your `doPost` and `doGet` integration script.
+
+```bash
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    
+    // Helper to turn raw ISO strings into clean readable times (e.g., "May 20, 1:44 PM")
+    function formatTime(isoString) {
+      if (!isoString) return "";
+      const dateObj = new Date(isoString);
+      return dateObj.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    const timestamp = new Date();
+    const name = data.memberName || "No Name Provided";
+    const role = data.role || "student";
+    
+    // Apply the clean formatting here
+    const checkIn = formatTime(data.checkIn);
+    const checkOut = formatTime(data.checkOut);
+    
+    const duration = data.duration || "";
+    const type = data.type || "General";
+    const sessionId = data.id || "No ID";
+    
+    // Automatically route to the correct Tab/Sheet
+    const dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const sheetName = `${dateStr} - ${type}`;
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(sheetName);
+    
+    // Create tab if it doesn't exist
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      const headers = ["Timestamp", "Name", "Role", "Check In", "Check Out", "Duration (Hrs)", "Type", "Session ID"];
+      sheet.appendRow(headers);
+      sheet.getRange("A1:H1").setFontWeight("bold").setBackground("#f3f3f3");
+      sheet.setFrozenRows(1);
+    }
+    
+    // Append the row safely
+    sheet.appendRow([timestamp, name, role, checkIn, checkOut, duration, type, sessionId]);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  if (e.parameter.action === 'checkCalendar') {
+    const now = new Date();
+    
+    const calId = 'c_a246400a88a21fe4e3b65cc96f43ae4020788d8410fe2a1c572ab632d872a20a@group.calendar.google.com';
+    let cal = CalendarApp.getCalendarById(calId);
+    
+    // FAILSAFE: If the script owner doesn't have the calendar, force a subscription
+    if (!cal) {
+       cal = CalendarApp.subscribeToCalendar(calId);
+    }
+    
+    if (!cal) {
+       return ContentService.createTextOutput(JSON.stringify({ upcoming: [{title: "ERR: Cal Link Failed", date: ""}] })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 1. Check for Active Automated Sessions
+    const todayEvents = cal.getEventsForDay(now);
+    let scheduledSession = { active: false, type: "" };
+    
+    for (let i = 0; i < todayEvents.length; i++) {
+      const ev = todayEvents[i];
+      if (ev.getStartTime() <= now && ev.getEndTime() >= now) {
+        const title = ev.getTitle().toUpperCase();
+        if (title.indexOf("[MEET]") !== -1) {
+          scheduledSession.active = true;
+          scheduledSession.type = (now.getDay() === 0 || now.getDay() === 6) ? "Weekend" : "Weekday";
+          break;
+        } else if (title.indexOf("[OUTREACH]") !== -1) {
+          scheduledSession.active = true;
+          scheduledSession.type = "Outreach";
+          break;
+        } else if (title.indexOf("[COMPETITION]") !== -1) {
+          scheduledSession.active = true;
+          scheduledSession.type = "Competition";
+          break;
+        }
+      }
+    }
+    
+    // 2. Fetch the Upcoming Events Stream (Next 14 Days)
+    const twoWeeksOut = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
+    const futureEvents = cal.getEvents(now, twoWeeksOut);
+    
+    let upcoming = [];
+    for (let i = 0; i < futureEvents.length; i++) {
+      const ev = futureEvents[i];
+      if (ev.getEndTime() > now) {
+        let cleanTitle = ev.getTitle().replace(/\[.*?\]\s*/g, '').trim();
+        upcoming.push({
+          title: cleanTitle,
+          date: ev.getStartTime().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        });
+      }
+      if (upcoming.length >= 3) break; 
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      active: scheduledSession.active,
+      type: scheduledSession.type,
+      upcoming: upcoming
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function testPermissions() {
+  const calId = 'c_a246400a88a21fe4e3b65cc96f43ae4020788d8410fe2a1c572ab632d872a20a@group.calendar.google.com';
+  CalendarApp.subscribeToCalendar(calId);
+  Logger.log("Success");
+}
+```
+
 4. Click **Deploy > New Deployment**.
 5. Select **Web App** as the deployment type.
 6. Set **Execute as** to **Me**.
