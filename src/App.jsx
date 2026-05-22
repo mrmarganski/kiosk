@@ -31,8 +31,8 @@ const db = getFirestore(app);
 const appId = 'panther-attendance-2064';
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN; 
 const SHEET_VIEW_URL = 'https://docs.google.com/spreadsheets/d/1AFFH88KxIcqbS2Pl7JoUnvDYTmlr_AvMoaQ77Ftd2nA/edit?usp=sharing';
-const GS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyMuaTigOr5kj7lYbZMUKEiI_cS8XTy2EyKzFy3L53I-UrOnCLfJisNvWhJZjX-moI7/exec';
-const SESSION_TYPES = ['[OUTREACH]', '[COMPETITION]', '[MEET]'];
+const GS_WEBAPP_URL = import.meta.env.VITE_GS_WEBAPP_URL; // <--- This is the updated line
+const SESSION_TYPES = ['[NO MEETING]', '[OUTREACH]', '[COMPETITION]', '[MEET]'];
 const ROLES = ['student', 'lead', 'mentor'];
 
 export default function App() {
@@ -49,6 +49,14 @@ export default function App() {
   const [upcomingEvents, setUpcomingEvents] = useState([]); // NEW STATE
   const [activeUser, setActiveUser] = useState(null);
   
+  const membersRef = useRef(members);
+  const meetingRef = useRef(meeting);
+
+  useEffect(() => {
+    membersRef.current = members;
+    meetingRef.current = meeting;
+  }, [members, meeting]);
+
   // UI States
   const [pinEntry, setPinEntry] = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
@@ -108,7 +116,7 @@ export default function App() {
   /* =========================
      ADVANCED CALENDAR ENGINE
   ========================= */
-  useEffect(() => {
+useEffect(() => {
     if (!GS_WEBAPP_URL) return;
 
     const runCalendarSynchronization = async () => {
@@ -120,23 +128,44 @@ export default function App() {
         if (calState.upcoming) setUpcomingEvents(calState.upcoming);
         
         // 2. Automate Kiosk Session Lifecycles
+        const currentMeeting = meetingRef.current;
+        const currentMembers = membersRef.current;
         const baseRef = doc(db, `artifacts/${appId}/public/data/settings`, 'meeting');
         
-        if (calState.active && !meeting.active) {
-          await setDoc(baseRef, { active: true, type: calState.type, startTime: new Date().toISOString(), isAutomated: true });
+        // --- START MEETING ---
+        if (calState.active && !currentMeeting.active) {
+          await setDoc(baseRef, { 
+            active: true, 
+            type: calState.type, 
+            startTime: new Date().toISOString(), 
+            scheduledEndTime: calState.endTime, // Save the official Calendar end time
+            isAutomated: true 
+          });
         } 
-        else if (!calState.active && meeting.active && meeting.isAutomated) {
-          const now = new Date();
-          const activeMembers = members.filter(m => m.isHere);
+        // --- END MEETING (SWEEP) ---
+        else if (!calState.active && currentMeeting.active && currentMeeting.isAutomated) {
+          // If tablet fell asleep, use the official scheduled end time. Otherwise, use right now.
+          const officialEndTime = currentMeeting.scheduledEndTime ? new Date(currentMeeting.scheduledEndTime) : new Date();
+          
+          const activeMembers = currentMembers.filter(m => m.isHere);
           for(const m of activeMembers) {
             await updateDoc(doc(db, `artifacts/${appId}/public/data/members`, m.id), { isHere: false, checkInTime: null });
-            const durationHrs = m.checkInTime ? ((now - new Date(m.checkInTime)) / 3600000).toFixed(2) : "0.00";
-            const lid = `${now.getTime()}_${m.id}`;
-            const logData = { id: lid, memberId: m.id, memberName: m.name || 'Unknown', role: m.role || 'student', checkIn: m.checkInTime, checkOut: now.toISOString(), duration: durationHrs, type: meeting.type, autoCheckout: true };
+            
+            const durationHrs = m.checkInTime ? ((officialEndTime - new Date(m.checkInTime)) / 3600000).toFixed(2) : "0.00";
+            const lid = `${officialEndTime.getTime()}_${m.id}`;
+            
+            const logData = { 
+              id: lid, memberId: m.id, memberName: m.name || 'Unknown', role: m.role || 'student', 
+              checkIn: m.checkInTime, checkOut: officialEndTime.toISOString(), // Backdates the log!
+              duration: durationHrs, type: currentMeeting.type, autoCheckout: true 
+            };
+            
             await setDoc(doc(db, `artifacts/${appId}/public/data/logs`, lid), logData);
+            
+            await new Promise(r => setTimeout(r, 500)); // Delay to prevent Google Sheets from crashing
             syncToSheet(logData);
           }
-          await setDoc(baseRef, { active: false, type: SESSION_TYPES[0], startTime: null });
+          await setDoc(baseRef, { active: false, type: SESSION_TYPES[0], startTime: null, scheduledEndTime: null });
         }
       } catch (err) {
         console.error("Calendar link failure", err);
@@ -144,9 +173,13 @@ export default function App() {
     };
 
     runCalendarSynchronization();
-    const syncInterval = setInterval(runCalendarSynchronization, 180000); 
+    
+    // Check every 60 seconds (better responsiveness than 3 minutes)
+    const syncInterval = setInterval(runCalendarSynchronization, 60000); 
+    
+    // The empty array [] means this timer starts ONCE and never gets interrupted by students checking in.
     return () => clearInterval(syncInterval);
-  }, [meeting.active, members]);
+  }, []);
 
   /* =========================
      3. HELPERS
