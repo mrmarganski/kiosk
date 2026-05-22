@@ -32,7 +32,7 @@ const appId = 'panther-attendance-2064';
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN; 
 const SHEET_VIEW_URL = 'https://docs.google.com/spreadsheets/d/1AFFH88KxIcqbS2Pl7JoUnvDYTmlr_AvMoaQ77Ftd2nA/edit?usp=sharing';
 const GS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyMuaTigOr5kj7lYbZMUKEiI_cS8XTy2EyKzFy3L53I-UrOnCLfJisNvWhJZjX-moI7/exec';
-const SESSION_TYPES = ['Weekday', 'Outreach', 'Competition', 'Weekend'];
+const SESSION_TYPES = ['[OUTREACH]', '[COMPETITION]', '[MEET]'];
 const ROLES = ['student', 'lead', 'mentor'];
 
 export default function App() {
