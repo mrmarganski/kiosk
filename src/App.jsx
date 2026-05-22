@@ -389,7 +389,7 @@ return (
         {/* 3. CLOCKS & STATUS */}
         <div className="flex gap-3 md:gap-4 z-10 shrink-0 w-full md:w-auto justify-center md:justify-end order-2 lg:order-3">
            <div className="bg-black/50 p-4 md:p-5 rounded-3xl text-center min-w-[120px] md:min-w-[140px] border border-white/[0.02]">
-              <p className="text-2xl md:text-3xl font-mono font-bold text-white tracking-tight">{currentTime.toLocaleTimeString([],{hour12:false, hour:'2-digit', minute:'2-digit'})}</p>
+              <p className="text-2xl font-mono font-bold text-white tracking-tight">{currentTime.toLocaleTimeString([],{hour12:true, hour:'numeric', minute:'2-digit'})}</p>
               <p className="text-[9px] font-black uppercase tracking-widest text-zinc-800">Local Time</p>
            </div>
            <div className={`p-4 md:p-5 rounded-3xl border text-center min-w-[120px] md:min-w-[140px] transition-colors ${meeting.active ? 'bg-red-600/10 border-red-500 shadow-[0_0_40px_#CD203022]' : 'bg-zinc-900/50 border-white/5 opacity-50'}`}>
