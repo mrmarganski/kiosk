@@ -70,7 +70,7 @@ function doGet(e) {
   if (e.parameter.action === 'checkCalendar') {
     const now = new Date();
     
-    const calId = 'c_a246400a88a21fe4e3b65cc96f43ae4020788d8410fe2a1c572ab632d872a20a@group.calendar.google.com';
+    const calId = 'INSERT CALL ID HERE - STARTS WITH c_ AND STRING OF NUMBERS ON CALENDER URL ID';
     let cal = CalendarApp.getCalendarById(calId);
     
     // FAILSAFE: If the script owner doesn't have the calendar, force a subscription
@@ -132,7 +132,7 @@ function doGet(e) {
 }
 
 function testPermissions() {
-  const calId = 'c_a246400a88a21fe4e3b65cc96f43ae4020788d8410fe2a1c572ab632d872a20a@group.calendar.google.com';
+  const calId = 'INSERT CALL ID HERE - STARTS WITH c_ AND STRING OF NUMBERS ON CALENDER URL ID';
   CalendarApp.subscribeToCalendar(calId);
   Logger.log("Success");
 }
