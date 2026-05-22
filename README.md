@@ -9,7 +9,7 @@ The kiosk uses Google Sheets as the ultimate database for attendance logs, makin
 
 1. Create a new Google Sheet.
 2. In the menu, click **Extensions > Apps Script**.
-3. Delete any existing code and paste your `doPost` and `doGet` integration script.
+3. Delete any existing code and paste the `doPost` and `doGet` integration script.
 
 ```bash
 function doPost(e) {
@@ -142,11 +142,23 @@ function testPermissions() {
 5. Select **Web App** as the deployment type.
 6. Set **Execute as** to **Me**.
 7. Set **Who has access** to **Anyone**.
-8. Click **Deploy**, authorize the permissions, and **copy the Web App URL** (you will need this in Step 3).
+8. Click **Deploy**, authorize the permissions, and **copy the Web App URL** (you will need this in Step 4).
 
 ---
 
-## 2. Firebase Realtime Database Setup
+## 2. Google Calendar Integration
+The system reads a Google Calendar to automatically start and stop meetings. You must link your specific team calendar to the Apps Script.
+
+1. Open Google Calendar on the web.
+2. Hover over your robotics team calendar on the left sidebar, click the **three dots**, and select **Settings and sharing**.
+3. Scroll down to the **Integrate calendar** section and copy your **Calendar ID** (it usually looks like a long string of letters ending in `@group.calendar.google.com`).
+4. Go back to your **Apps Script editor**. Inside the `doGet` function, find the variable named `calId` and replace the string with your copied Calendar ID.
+5. **Crucial:** To grant the script permission to read your calendar, select the `testPermissions` function from the dropdown menu at the top of the Apps Script editor and click **Run**. Accept the Google security warning.
+6. Re-deploy the script (Deploy > Manage Deployments > Pencil Icon > New Version > Deploy).
+
+---
+
+## 3. Firebase Realtime Database Setup
 Firebase is used to keep the kiosk synchronized instantly across multiple devices and to manage the live roster.
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
@@ -157,7 +169,7 @@ Firebase is used to keep the kiosk synchronized instantly across multiple device
 
 ---
 
-## 3. Local Installation & Configuration
+## 4. Local Installation & Configuration
 Clone the repository and set up your secure environment variables.
 
 ### Clone the Repository
@@ -193,7 +205,7 @@ VITE_GS_WEBAPP_URL=[https://script.google.com/macros/s/your_script_id/exec](http
 
 ---
 
-## 4. Local Testing
+## 5. Local Testing
 Always verify your code locally before deploying to the tablet or web.
 
 1. Build the project to verify structural integrity:
@@ -208,7 +220,7 @@ Always verify your code locally before deploying to the tablet or web.
 
 ---
 
-## 5. Deployment (Firebase Hosting)
+## 6. Deployment (Firebase Hosting)
 To run this reliably on a tablet, host the application using Firebase Hosting.
 
 1. Install the Firebase CLI tools globally on your machine:
@@ -223,7 +235,7 @@ To run this reliably on a tablet, host the application using Firebase Hosting.
    ```bash
    firebase init hosting
    ```
-   * *Select "Use an existing project" and choose your Panther Kiosk project.*
+   * *Select "Use an existing project" and choose your Firebase project.*
    * *When asked for your public directory, type `dist`.*
    * *Configure as a single-page app: `Yes`.*
    * *Set up automatic builds with GitHub: `No`.*
@@ -234,7 +246,7 @@ To run this reliably on a tablet, host the application using Firebase Hosting.
 
 ---
 
-## 6. How to Use the System
+## 7. How to Use the System
 Once deployed and running on your tablet, the system manages itself based on your calendar.
 
 * **Automated Sessions:** The system reads your public Google Calendar. If it detects an event with the tags `[MEET]`, `[OUTREACH]`, or `[COMPETITION]` in the title, it will automatically activate the session status.
