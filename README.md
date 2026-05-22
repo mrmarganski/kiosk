@@ -162,7 +162,7 @@ The system reads a Google Calendar to automatically start and stop meetings. You
 Firebase is used to keep the kiosk synchronized instantly across multiple devices and to manage the live roster.
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Create a new project named "Panther Kiosk".
+2. Create a new project named "Kiosk".
 3. Navigate to **Firestore Database** and click **Create Database**. Start in "Test Mode" (or configure your security rules appropriately).
 4. Go to **Project Settings > General**, scroll down to "Your apps", and click the **Web `</>`** icon to add a web app.
 5. Register the app and copy the `firebaseConfig` keys provided.
