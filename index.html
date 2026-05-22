@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>panther-kiosk</title>
+    
+    <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=default,Array.prototype.includes,String.prototype.padStart,String.prototype.padEnd,Object.entries,Object.values,TextEncoder,TextDecoder,fetch,Promise"></script>
+    <script>
+      // Manual fallback for globalThis which Firebase requires
+      if (typeof globalThis === 'undefined') {
+        window.globalThis = window;
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
